@@ -43,33 +43,28 @@ const HomeScreen = ({navigation , route}) => {
 
   async function fetchNameData() {
     try {
-      const results = await getCharacter({ name: nameSearch })
-      console.log(info)
-      setFetchResult(prevState => ({ ...prevState, characters: results }))
-
-    } catch (error) {
-      setFetchResult({ characters: [] })
-    }
-  }
-
-  async function fetchIdData() {
-    try {
-
-        const response = await getCharacterId({ ids: personagens.chars })
-        console.log(response)
-        setFetchResult(prevState => ({ ...prevState, pageInfo: '', characters: response.data }))
-
+      const results = await getCharacter({ name: nameSearch });
+      console.log()
+      let charactersData;
+      if(results.length > 1){
+        charactersData = results.map(({ data }) => data);
+      }else{
+        console.log(results)
+        charactersData = [results.data]
+      }
+      setFetchResult({ characters: charactersData });
     } catch (error) {
       console.log(error)
-      setFetchResult({ pageInfo: {}, characters: [] })
+      setFetchResult({ characters: [] });
     }
   }
 
-  async function fetchPokeInfo() {
-    try{
-      const response = await getCharacter({info: info})
-    } catch(error){
-
+  async function fetchInfoData() {
+    try {
+      const results = await getCharacter({ name: nameSearch })
+      setFetchResult({characters: results.data.results })
+    } catch (error) {
+      setFetchResult({ characters: [] })
     }
   }
 
@@ -85,7 +80,7 @@ const HomeScreen = ({navigation , route}) => {
 
   useEffect(() => {
     if(personagens.chars && personagens.chars != "" && personagens.chars.length > 0){
-      fetchIdData(personagens.chars)
+      fetchInfoData(personagens.chars)
     }
   }, [personagens])
 
@@ -123,15 +118,14 @@ const HomeScreen = ({navigation , route}) => {
         <FlatList
           style={styles.marginVertical}
           data={fetchResult.characters}
-          keyExtractor={({ name }) => name}
-          renderItem={({ item: { name } }) => {
+          keyExtractor={({ id }) => id}
+          renderItem={({ item }) => {
             return (
-              <Text onPress={() => fetchCharacterDetails(name)} style={styles.characterContainer}>
-                
-                {/* <Image style={styles.characterImage} source={{ uri: image }} /> */}
+              <Text onPress={() => fetchCharacterDetails(item.name)} style={styles.characterContainer}>
+                <Image style={styles.characterImage} source={{ uri: item.sprites.front_default }} />
                 <View style={styles.txtBox}>
-                  <Text><strong>{name}</strong></Text>
-                  {/* <Text>{species}</Text> */}
+                  <Text><strong>{item.name}</strong></Text>
+                  <Text></Text>
                 </View>
                 
               </Text>

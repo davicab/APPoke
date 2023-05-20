@@ -10,8 +10,9 @@ const client = axios.create({
 const getCharacter = async ({ name = '' }) => {
   if (name == '' || name == null) {
     const results = [];
-    for (let i = 1; i <= 50; i++) {
-      const uri = encodeURI(`pokemon/${i}`);
+    for (let i = 0; i < 50; i++) {
+      const randomId = Math.floor(Math.random() * 1010) + 1;
+      const uri = encodeURI(`pokemon/${randomId}`);
       const response = await client.get(uri);
       results.push(response);
     }

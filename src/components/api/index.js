@@ -10,27 +10,36 @@ const client = axios.create({
 const getCharacter = async ({ name = '' }) => {
   if (name == '' || name == null) {
     const results = [];
-    for (let i = 0; i < 50; i++) {
+    const generatedNumbers = new Set();
+    
+    while (results.length < 50) {
       const randomId = Math.floor(Math.random() * 1010) + 1;
-      const uri = encodeURI(`pokemon/${randomId}`);
-      const response = await client.get(uri);
-      results.push(response);
+      
+      if (!generatedNumbers.has(randomId)) {
+        generatedNumbers.add(randomId);
+        
+        const uri = encodeURI(`pokemon/${randomId}`);
+        const response = await client.get(uri);
+        results.push(response);
+      }
     }
+    
     return results;
   } else {
     const uri = encodeURI(`pokemon/${name}`);
-    return await client.get(uri)
+    return await client.get(uri);
   }
 };
-const getCharacterId = async ({ ids = '' }) => {
-  const uri = encodeURI(`pokemon/${ids}?limit=50`)
+
+const getSinglePoke = async (name) => {
+  const uri = encodeURI(`pokemon/${name}`)
   return await client.get(uri)
 }
-const getLocation = async ({ id = ''}) => {
-  const uri = encodeURI(`pokemon/${id}/1/encounters?limit=50`)
+const getLocation = async (id) => {
+  const uri = encodeURI(`pokemon/${id}/encounters`)
   return await client.get(uri)
 }
 
 
 
-export { getCharacter, getLocation, getCharacterId }
+export { getCharacter, getLocation, getSinglePoke }

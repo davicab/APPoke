@@ -1,12 +1,19 @@
 import React, { useEffect, useState } from 'react'
-import { StyleSheet, View, Text, CheckBox, Image } from 'react-native'
-import { getCharacter } from '../../components/api'
+import { StyleSheet, View, Text, CheckBox, Image, TouchableOpacity } from 'react-native'
+import { getCharacter, getLocation } from '../../components/api'
 import { useContext } from "react";
 import { ThemeContext } from '../../components/ThemeContext';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 
 const DetailScreen = ({navigation,route }) => {
   const { poke } = route.params
+  const pokeId = poke.id
   const { theme, setTheme } = useContext(ThemeContext);
+  const [heartClicked, setHeartClicked] = useState(false);
+  
+  const [location, setLocation] = useState({loc: []})
+
   const toggleTheme = () => {
     setTheme(!theme);
   };
@@ -59,9 +66,39 @@ const DetailScreen = ({navigation,route }) => {
     shadow: '#000'
   };
 
-  function fetchLocationDetails(name) {
-    navigation.navigate('LocationDetail',{name})
+
+  async function fetchLoc() {
+    try {
+      const result = await getLocation(pokeId);
+      let locData = [];
+  
+      if (result.data.length > 0) {
+        locData = result.data.map((encounter) => encounter.location_area.name);
+      }
+      setLocation({ loc: locData });
+    } catch (error) {
+      console.log(error);
+      setLocation({ loc: "" });
+    }
   }
+  
+  
+  useEffect(() =>{
+    fetchLoc()
+  }, [])
+
+  const storeCurrentId = async (id) => {
+    try {
+      await AsyncStorage.setItem('currentId', id.toString());
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const handleHeartPress = () => {
+    storeCurrentId(pokeId);
+    setHeartClicked(true);
+  };
 
   return (
     <View style={tema.bg}>
@@ -69,10 +106,16 @@ const DetailScreen = ({navigation,route }) => {
         <CheckBox value={theme} onValueChange={toggleTheme} />
         <Text style={{color: theme ? 'white' : 'black'}}>Modo Noturno</Text>
       </View>
-      {/* <Text style={tema.title}>Bem vindo, {user}</Text> */}
       <View style={tema.charInfo}>
-        <View style={styles.charBox}>
-          <Image style={styles.charImg} source={poke.sprites.front_default} />
+        <View style={styles.characterContainer}>
+            <View style={styles.fullDiv}>
+              <Image style={styles.characterImage} source={poke.sprites.front_default} />
+              <View style={styles.pokeback}>
+                  <View style={styles.redBg}></View>
+                  <View style={styles.blackBg}></View>
+                  <View style={styles.whiteBg}></View>
+              </View>
+            </View>
         </View>
         <View style={styles.charFile}>
           <Text style={styles.charInfos}>Name: {poke.species.name}</Text>
@@ -94,7 +137,19 @@ const DetailScreen = ({navigation,route }) => {
             ))}
           </View>
 
-          <Text style={styles.charLocs}>Location: </Text>
+          <View style={styles.movesContainer}>
+            <Text>locations: </Text>
+            {location.loc.length > 0 ? (
+              location.loc.map((loc, index) => (
+                <Text key={index} style={[styles.moveName]}>
+                  {loc.replace(/-/g, " ")}
+                </Text>
+              ))
+            ) : (
+              <Text style={[styles.moveName]}>localizacao desconhecida</Text>
+            )}
+          </View>
+
 
         </View>
       </View>
@@ -109,47 +164,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: "5px"
   },
-  charImg: {
-    width: "200px",
-    height: "200px",
-    borderRadius: "10px",
-    borderWidth: "1px",
-    borderColor: "#cecece",
-    borderStyle: "solid"
-  },
-  charBox: {
-    position: 'relative',
-  },
-  charStatus:{
-    position: "absolute",
-    right: "10px",
-    top: "10px",
-    padding: "5px",
-    color: "white",
-    fontWeight: 900,
-    borderRadius: "10px"
-  },
-  openEp: {
-    width: "80%",
-    height: '60px',
-    backgroundColor: "#fcfe8c",
-    display: 'flex',
-    alignItems: "center",
-    justifyContent: 'center',
-    color: "#985a2c",
-    fontWeight: 900,
-    fontSize: "20px",
-    borderRadius: "10px",
-    marginTop: "15px",
-    shadowColor: '#171717',
-    shadowOffset: {width: -2, height: 4},
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
-    borderWidth: "1px",
-    borderColor: "#cecece",
-    borderStyle: "solid"
-
-  },
   charFile:{
     width: '80%',
     height: 'auto',
@@ -160,26 +174,6 @@ const styles = StyleSheet.create({
     borderStyle: "solid",
     padding: "10px",
     gap: "15px"
-  },
-  charLocs: {
-    textAlign: "center",
-    fontWeight: 700,
-    backgroundColor: "#a0d4e7",
-    borderRadius: "10px",
-    marginTop: "15px",
-    shadowColor: '#171717',
-    shadowOffset: {width: -2, height: 4},
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
-    width: "100%",
-    height: '60px',
-    padding: "10px",
-    display: 'flex',
-    alignItems: "center",
-    justifyContent: 'center',
-    borderWidth: "1px",
-    borderColor: "#cecece",
-    borderStyle: "solid"
   },
   charInfos: {
     textAlign: "center",
@@ -216,6 +210,62 @@ const styles = StyleSheet.create({
     color: "white",
     whiteSpace: 'nowrap'
   },  
+  characterContainer: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    width: '250px',
+    height: '250px',
+    overflow: 'hidden',
+    borderWidth: 2,
+    borderRadius: '50%',
+    marginBottom: 15,
+    position: 'relative',
+    zIndex: 2,
+    overflow: 'hidden'
+  },
+  pokeback: {
+    position: 'absolute',
+    zIndex: '1',
+    height: '100%',
+    width: '100%',
+  },
+  fullDiv: {
+    width: "100%",
+    height: "100%",
+    display: "flex",
+    alignItems: 'center',
+    position: 'relative',
+    justifyContent: 'center'
+  },
+  redBg:{
+    width: '100%',
+    height: '48%',
+    backgroundColor: 'red'
+  },
+  whiteBg:{
+    width: '100%',
+    height: '48%',
+    backgroundColor: 'white'
+  },
+  blackBg:{
+    width: "100%",
+    height: '6%',
+    backgroundColor: 'black'
+  },
+  characterImage: {
+    width: 200,
+    height: 200,
+    borderTopLeftRadius: 8,
+    borderTopRightRadius: 8,
+    zIndex: 2
+  },
+  heartContainer: {
+    width: 50,
+    height: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
 })
 
 

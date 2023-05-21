@@ -1,13 +1,16 @@
 import React, { useEffect, useState } from 'react'
 import { StyleSheet, Button, View, CheckBox, Image, Text, TextInput, TouchableHighlight, ActivityIndicator } from 'react-native'
-import { getCharacter } from '../../components/api'
+import { getCharacter, getSinglePoke } from '../../components/api'
 import DetailScreen from '../DetailScreen';
 import { useContext } from "react";
 import { ThemeContext } from '../../components/ThemeContext';
+import { debounce } from 'lodash';
 
-const HomeScreen = ({ navigation, route }) => {
+const SearchScreen = ({ navigation, route }) => {
   const [fetchResult, setFetchResult] = useState({ characters: [] })
+  const [nameSearch, setNameSearch] = useState('')
   const [isLoading, setIsLoading] = useState(false);
+  const [isSearchPerformed, setIsSearchPerformed] = useState(false);
 
   const { theme, setTheme } = useContext(ThemeContext);
   const toggleTheme = () => {
@@ -38,77 +41,78 @@ const HomeScreen = ({ navigation, route }) => {
   })
 
   async function fetchNameData() {
+    setIsLoading(true);
     try {
-      const results = await getCharacter("");
-      let charactersData;
-      if (results.length > 1) {
-        charactersData = results.map(({ data }) => data);
-      } else {
-        charactersData = [results.data]
-      }
-      setFetchResult({ characters: charactersData });
+      const result = await getSinglePoke(nameSearch);
+      setFetchResult(result.data);
+      setIsSearchPerformed(true);
     } catch (error) {
-      setFetchResult({ characters: [] });
+      setFetchResult(null);
+      setIsSearchPerformed(true);
     } finally {
       setIsLoading(false);
     }
   }
 
+  useEffect(() => {
+    const debouncedFetchNameData = debounce(() => {
+      if (nameSearch.trim().length > 0) {
+        fetchNameData();
+      }
+    }, 1000);
+
+    debouncedFetchNameData();
+
+    return () => {
+      debouncedFetchNameData.cancel();
+    };
+  }, [nameSearch]);
+
+  const handleNameChange = (text) => {
+    setNameSearch(text);
+  };
+
   function fetchCharacterDetails(poke) {
     navigation.navigate('DetailScreen', { poke })
   }
 
-  function fetchSearch() {
-    navigation.navigate('SearchScreen')
-  }
-
-  useEffect(() => {
-    fetchNameData();
-  }, []);
-
   return (
     <View style={tema.bg}>
-      <View style={{flexDirection: 'row',justifyContent: 'space-between', marginBottom: '10px'}}>
-        <View style={{ flexDirection: 'row', gap: 15 }}>
-          <CheckBox value={theme} onValueChange={toggleTheme} />
-          <Text style={{ color: theme ? 'white' : 'black' }}>Modo Noturno</Text>
-        </View>
-        <TouchableHighlight 
-        onPress={() => fetchSearch()}
-        style={styles.searchBox}>
-          <Image style={{width: "32px", height: "32px", position: 'relative'}} source={require('/assets/images/search.svg')} />
-        </TouchableHighlight>
+      <View style={{ flexDirection: 'row', gap: 15 }}>
+        <CheckBox value={theme} onValueChange={toggleTheme} />
+        <Text style={{ color: theme ? 'white' : 'black' }}>Modo Noturno</Text>
       </View>
       <View style={tema.mainView}>
-        {isLoading ? ( // Renderiza o elemento animado enquanto isLoading for verdadeiro
+        <TextInput
+          style={[styles.textInput, styles.marginVertical]}
+          onChangeText={handleNameChange}
+          placeholder='Pesquise algum personagem'
+          value={nameSearch}
+        />
+      {isLoading ? (
           <View>
-            <Text>Aguarde enquanto uma lista de 50 pokemons aleatorios eh gerada, demora um pouquinho ;)</Text>
+            <Text>Aguarde enquanto a busca é realizada...</Text>
             <ActivityIndicator size="large" color="#0000ff" />
           </View>
-        ) : (          
-          <View style={styles.gridContainer}>
-            {fetchResult.characters.map(item => (
-              <TouchableHighlight
-                key={item.id}
-                onPress={() => fetchCharacterDetails(item)}
-                underlayColor="transparent"
-                style={styles.characterContainer}
-              >
-                <View style={styles.fullDiv}>
-                  <Image style={styles.characterImage} source={{ uri: item.sprites.front_default }} />
-                  <View style={styles.txtBox}>
-                    <Text><strong>{item.id} - {item.name}</strong></Text>
-                  </View>
-                  <View style={styles.pokeback}>
-                      <View style={styles.redBg}></View>
-                      <View style={styles.blackBg}></View>
-                      <View style={styles.whiteBg}></View>
-                  </View>
-                </View>
-              </TouchableHighlight>
-            ))}
-          </View>
-        )}
+      ) : isSearchPerformed && fetchResult ? (
+        <TouchableHighlight
+          onPress={() => fetchCharacterDetails(fetchResult)}
+          underlayColor="transparent"
+          style={styles.characterContainer}
+        >
+            <View style={styles.fullDiv}>
+              <Image style={styles.characterImage} source={{ uri: fetchResult.sprites.front_default }} />
+              <View style={styles.txtBox}>
+                <Text><strong>{fetchResult.id} - {fetchResult.name}</strong></Text>
+              </View>
+              <View style={styles.pokeback}>
+                <View style={styles.redBg}></View>
+                <View style={styles.blackBg}></View>
+                <View style={styles.whiteBg}></View>
+              </View>
+            </View>
+        </TouchableHighlight>
+      ) : null}
       </View>
     </View>
   )
@@ -135,7 +139,8 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     position: 'relative',
     zIndex: 2,
-    overflow: 'hidden'
+    overflow: 'hidden',
+    margin: 'auto'
   },
   characterImage: {
     width: 200,
@@ -192,13 +197,7 @@ const styles = StyleSheet.create({
     width: "100%",
     height: '6%',
     backgroundColor: 'black'
-  },
-  searchBox: {
-    width: "50px", height: "50px", display: 'flex', alignItems: 'center', justifyContent: 'center',
-    backgroundColor: '#cecece',
-    padding: '5px',
-    borderRadius: 8
   }
 })
 
-export default HomeScreen;
+export default SearchScreen;

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { StyleSheet, View, Text, CheckBox, Image, TouchableOpacity } from 'react-native'
+import { StyleSheet, View, Text, CheckBox, Image, TouchableHighlight, TouchableOpacity } from 'react-native'
 import { getCharacter, getLocation } from '../../components/api'
 import { useContext } from "react";
 import { ThemeContext } from '../../components/ThemeContext';
@@ -10,7 +10,7 @@ const DetailScreen = ({navigation,route }) => {
   const { poke } = route.params
   const pokeId = poke.id
   const { theme, setTheme } = useContext(ThemeContext);
-  const [heartClicked, setHeartClicked] = useState(false);
+  const [isFilled, setIsFilled] = useState(true);
   
   const [location, setLocation] = useState({loc: []})
 
@@ -87,24 +87,71 @@ const DetailScreen = ({navigation,route }) => {
     fetchLoc()
   }, [])
 
+  const handleHeartPress = async () => {
+    if (isFilled) {
+      // Adicionar o ID ao array currentIds
+      storeCurrentId(pokeId);
+    } else {
+      // Remover o ID do array currentIds
+      removeCurrentId(pokeId);
+    }
+  
+    setIsFilled(!isFilled);
+  
+    const ids = await getCurrentIds();
+    console.log(ids);
+  };
+  
   const storeCurrentId = async (id) => {
     try {
-      await AsyncStorage.setItem('currentId', id.toString());
+      const currentIds = await getCurrentIds();
+  
+      let updatedIds = [...currentIds, id];
+  
+      await AsyncStorage.setItem('currentIds', JSON.stringify(updatedIds));
     } catch (error) {
       console.log(error);
     }
   };
-
-  const handleHeartPress = () => {
-    storeCurrentId(pokeId);
-    setHeartClicked(true);
+  
+  const removeCurrentId = async (id) => {
+    try {
+      const currentIds = await getCurrentIds();
+  
+      let updatedIds = currentIds.filter((itemId) => itemId !== id);
+  
+      await AsyncStorage.setItem('currentIds', JSON.stringify(updatedIds));
+    } catch (error) {
+      console.log(error);
+    }
+  };
+  const getCurrentIds = async () => {
+    try {
+      const currentIds = await AsyncStorage.getItem('currentIds');
+  
+      if (currentIds) {
+        return JSON.parse(currentIds);
+      }
+  
+      return [];
+    } catch (error) {
+      console.log(error);
+      return [];
+    }
   };
 
   return (
     <View style={tema.bg}>
-      <View style={{flexDirection: 'row', gap: "15px"  }}>
-        <CheckBox value={theme} onValueChange={toggleTheme} />
-        <Text style={{color: theme ? 'white' : 'black'}}>Modo Noturno</Text>
+      <View style={{flexDirection: 'row',justifyContent: 'space-between', marginBottom: '10px'}}>
+        <View style={{ flexDirection: 'row', gap: 15 }}>
+          <CheckBox value={theme} onValueChange={toggleTheme} />
+          <Text style={{ color: theme ? 'white' : 'black' }}>Modo Noturno</Text>
+        </View>
+        <TouchableHighlight 
+        onPress={() => fetchSearch()}
+        style={styles.searchBox}>
+          <Image style={{width: "32px", height: "32px", position: 'relative'}} source={require('/assets/images/search.svg')} />
+        </TouchableHighlight>
       </View>
       <View style={tema.charInfo}>
         <View style={styles.characterContainer}>
@@ -119,7 +166,17 @@ const DetailScreen = ({navigation,route }) => {
         </View>
         <View style={styles.charFile}>
           <Text style={styles.charInfos}>Name: {poke.species.name}</Text>
+          <View>
+            <TouchableOpacity onPress={handleHeartPress}>
+                <Image style={{width: "32px", height: "32px", position: 'relative'}} source={
+                  isFilled
+                    ? require('/assets/images/Heart.png')
+                    : require('/assets/images/Heart-fill.png')
+                } />
 
+            </TouchableOpacity>
+
+          </View>
           <View style={styles.typesContainer}>
             <Text>Types: </Text>
             {poke.types.map((type, index) => (
@@ -260,12 +317,12 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 8,
     zIndex: 2
   },
-  heartContainer: {
-    width: 50,
-    height: 50,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+  searchBox: {
+    width: "50px", height: "50px", display: 'flex', alignItems: 'center', justifyContent: 'center',
+    backgroundColor: '#cecece',
+    padding: '5px',
+    borderRadius: 8
+  }
 })
 
 

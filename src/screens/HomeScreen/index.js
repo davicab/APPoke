@@ -38,6 +38,7 @@ const HomeScreen = ({ navigation, route }) => {
   })
 
   async function fetchNameData() {
+    setIsLoading(true)
     try {
       const results = await getCharacter("");
       let charactersData;
@@ -80,7 +81,7 @@ const HomeScreen = ({ navigation, route }) => {
         </TouchableHighlight>
       </View>
       <View style={tema.mainView}>
-        {isLoading ? ( // Renderiza o elemento animado enquanto isLoading for verdadeiro
+        {isLoading ? (
           <View>
             <Text>Aguarde enquanto uma lista de 50 pokemons aleatorios eh gerada, demora um pouquinho ;)</Text>
             <ActivityIndicator size="large" color="#0000ff" />

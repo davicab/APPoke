@@ -85,30 +85,42 @@ const DetailScreen = ({navigation,route }) => {
   
   useEffect(() =>{
     fetchLoc()
+    checkIfPokeIdExists();
   }, [])
 
   const handleHeartPress = async () => {
     if (isFilled) {
-      // Adicionar o ID ao array currentIds
       storeCurrentId(pokeId);
     } else {
-      // Remover o ID do array currentIds
       removeCurrentId(pokeId);
     }
-  
+
     setIsFilled(!isFilled);
-  
-    const ids = await getCurrentIds();
-    console.log(ids);
   };
-  
+
+  const checkIfPokeIdExists = async () => {
+    try {
+      const currentIds = await getCurrentIds();
+      const pokeIdExists = currentIds.includes(pokeId);
+      setIsFilled(!pokeIdExists);
+    } catch (error) {
+      console.log(error);
+    }
+  };
   const storeCurrentId = async (id) => {
     try {
       const currentIds = await getCurrentIds();
+      
+      if(!currentIds.includes(id)){
+
+        let updatedIds = [...currentIds, id];
   
-      let updatedIds = [...currentIds, id];
-  
-      await AsyncStorage.setItem('currentIds', JSON.stringify(updatedIds));
+        await AsyncStorage.setItem('currentIds', JSON.stringify(updatedIds));
+
+      }else{
+        console.log('ja adicionado')
+      }
+
     } catch (error) {
       console.log(error);
     }
@@ -147,11 +159,6 @@ const DetailScreen = ({navigation,route }) => {
           <CheckBox value={theme} onValueChange={toggleTheme} />
           <Text style={{ color: theme ? 'white' : 'black' }}>Modo Noturno</Text>
         </View>
-        <TouchableHighlight 
-        onPress={() => fetchSearch()}
-        style={styles.searchBox}>
-          <Image style={{width: "32px", height: "32px", position: 'relative'}} source={require('/assets/images/search.svg')} />
-        </TouchableHighlight>
       </View>
       <View style={tema.charInfo}>
         <View style={styles.characterContainer}>
@@ -222,7 +229,7 @@ const styles = StyleSheet.create({
     gap: "5px"
   },
   charFile:{
-    width: '80%',
+    width: '100%',
     height: 'auto',
     backgroundColor: "#FFF",
     borderRadius: "10px",

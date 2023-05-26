@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react'
-import { StyleSheet, Button, View, CheckBox, Image, Text, TextInput, TouchableHighlight, ActivityIndicator } from 'react-native'
-import { getCharacter } from '../../components/api'
+import { StyleSheet, View, CheckBox, Image, Text, TouchableHighlight, ActivityIndicator } from 'react-native'
+import { getSinglePoke  } from '../../components/api'
 import DetailScreen from '../DetailScreen';
 import { useContext } from "react";
 import { ThemeContext } from '../../components/ThemeContext';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const HomeScreen = ({ navigation, route }) => {
+const FavoritesScreen = ({ navigation, route }) => {
   const [fetchResult, setFetchResult] = useState({ characters: [] })
+  const [nameSearch, setNameSearch] = useState('')
   const [isLoading, setIsLoading] = useState(false);
 
   const { theme, setTheme } = useContext(ThemeContext);
@@ -33,57 +35,65 @@ const HomeScreen = ({ navigation, route }) => {
       justifyContent: 'center',
       fontSize: 18,
       textAlign: 'center',
-      color: theme == true ? '#FFF' : '#000'
+      color: theme == true ? '#FFF' : '#000',
+      fontWeight: '900',
+      marginTop: '10px',
+      marginBottom: '10px'
     }
   })
-
-  async function fetchNameData() {
-    setIsLoading(true)
+  const getCurrentIds = async () => {
     try {
-      const results = await getCharacter("");
-      let charactersData;
-      if (results.length > 1) {
-        charactersData = results.map(({ data }) => data);
-      } else {
-        charactersData = [results.data]
+      const currentIds = await AsyncStorage.getItem('currentIds');
+  
+      if (currentIds) {
+        return JSON.parse(currentIds);
       }
-      setFetchResult({ characters: charactersData });
+      
+      return [];
     } catch (error) {
-      setFetchResult({ characters: [] });
-    } finally {
-      setIsLoading(false);
+      console.log(error);
+      return [];
+    }
+  };
+  async function fetchNameData() {
+    const ids = await getCurrentIds();
+  
+    for (const id of ids) {
+      try {
+        const result = await getSinglePoke(id);
+        const { data } = result; 
+        setFetchResult(prevState => {
+          const updatedCharacters = [...prevState.characters, data];
+          return { characters: updatedCharacters };
+        });
+      } catch (error) {
+        console.log(error);
+      }
     }
   }
+  
+
+  useEffect(() => {
+    fetchNameData()
+  }, []);
 
   function fetchCharacterDetails(poke) {
     navigation.navigate('DetailScreen', { poke })
   }
 
-  function fetchSearch() {
-    navigation.navigate('SearchScreen')
-  }
-
-  useEffect(() => {
-    fetchNameData();
-  }, []);
-
   return (
     <View style={tema.bg}>
-      <View style={{flexDirection: 'row',justifyContent: 'space-between', marginBottom: '10px'}}>
-        <View style={{ flexDirection: 'row', gap: 15 }}>
-          <CheckBox value={theme} onValueChange={toggleTheme} />
-          <Text style={{ color: theme ? 'white' : 'black' }}>Modo Noturno</Text>
-        </View>
+      <View style={{ flexDirection: 'row', gap: 15 }}>
+        <CheckBox value={theme} onValueChange={toggleTheme} />
+        <Text style={{ color: theme ? 'white' : 'black' }}>Modo Noturno</Text>
       </View>
       <View style={tema.mainView}>
+        <Text style={tema.title}>Pokemons Favoritos</Text>
         {isLoading ? (
-          <View>
-            <Text>Aguarde enquanto uma lista de 50 pokemons aleatorios eh gerada, demora um pouquinho ;)</Text>
-            <ActivityIndicator size="large" color="#0000ff" />
-          </View>
-        ) : (          
+          <ActivityIndicator size="large" color="#0000ff" />
+        ) : (
           <View style={styles.gridContainer}>
-            {fetchResult.characters.map(item => (
+            {fetchResult.characters.map((item) => (
               <TouchableHighlight
                 key={item.id}
                 onPress={() => fetchCharacterDetails(item)}
@@ -93,12 +103,14 @@ const HomeScreen = ({ navigation, route }) => {
                 <View style={styles.fullDiv}>
                   <Image style={styles.characterImage} source={{ uri: item.sprites.front_default }} />
                   <View style={styles.txtBox}>
-                    <Text><strong>{item.id} - {item.name}</strong></Text>
+                    <Text>
+                      <strong>{item.id} - {item.name}</strong>
+                    </Text>
                   </View>
                   <View style={styles.pokeback}>
-                      <View style={styles.redBg}></View>
-                      <View style={styles.blackBg}></View>
-                      <View style={styles.whiteBg}></View>
+                    <View style={styles.redBg}></View>
+                    <View style={styles.blackBg}></View>
+                    <View style={styles.whiteBg}></View>
                   </View>
                 </View>
               </TouchableHighlight>
@@ -131,7 +143,8 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     position: 'relative',
     zIndex: 2,
-    overflow: 'hidden'
+    overflow: 'hidden',
+    margin: 'auto'
   },
   characterImage: {
     width: 200,
@@ -139,18 +152,6 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 8,
     borderTopRightRadius: 8,
     zIndex: 2
-  },
-  textInput: {
-    borderWidth: 1,
-    borderColor: '#CCCCCC',
-    height: 35,
-    padding: 5,
-    borderRadius: 6,
-    borderColor: 'darkgreen',
-    backgroundColor: '#FFF',
-  },
-  marginVertical: {
-    marginVertical: 5,
   },
   txtBox: {
     width: '100%',
@@ -188,13 +189,7 @@ const styles = StyleSheet.create({
     width: "100%",
     height: '6%',
     backgroundColor: 'black'
-  },
-  searchBox: {
-    width: "50px", height: "50px", display: 'flex', alignItems: 'center', justifyContent: 'center',
-    backgroundColor: '#cecece',
-    padding: '5px',
-    borderRadius: 8
   }
 })
 
-export default HomeScreen;
+export default FavoritesScreen;

@@ -69,16 +69,10 @@ const HomeScreen = ({ navigation, route }) => {
 
   return (
     <View style={tema.bg}>
-      <View style={{flexDirection: 'row',justifyContent: 'space-between', marginBottom: '10px'}}>
-        <View style={{ flexDirection: 'row', gap: 15 }}>
-          <CheckBox value={theme} onValueChange={toggleTheme} />
-          <Text style={{ color: theme ? 'white' : 'black' }}>Modo Noturno</Text>
-        </View>
-      </View>
       <View style={tema.mainView}>
         {isLoading ? (
           <View>
-            <Text>Aguarde enquanto uma lista de 50 pokemons aleatorios eh gerada, demora um pouquinho ;)</Text>
+            <Text style={tema.title}>Aguarde enquanto uma lista de 50 pokemons aleatorios eh gerada, demora um pouquinho ;)</Text>
             <ActivityIndicator size="large" color="#0000ff" />
           </View>
         ) : (          

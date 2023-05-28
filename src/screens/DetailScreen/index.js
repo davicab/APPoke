@@ -154,12 +154,6 @@ const DetailScreen = ({navigation,route }) => {
 
   return (
     <View style={tema.bg}>
-      <View style={{flexDirection: 'row',justifyContent: 'space-between', marginBottom: '10px'}}>
-        <View style={{ flexDirection: 'row', gap: 15 }}>
-          <CheckBox value={theme} onValueChange={toggleTheme} />
-          <Text style={{ color: theme ? 'white' : 'black' }}>Modo Noturno</Text>
-        </View>
-      </View>
       <View style={tema.charInfo}>
         <View style={styles.characterContainer}>
             <View style={styles.fullDiv}>
@@ -171,9 +165,8 @@ const DetailScreen = ({navigation,route }) => {
               </View>
             </View>
         </View>
-        <View style={styles.charFile}>
-          <Text style={styles.charInfos}>Name: {poke.species.name}</Text>
-          <View>
+        <View style={{flexDirection: 'row',gap: '10px'}}>
+            <Text style={tema.title}>Favoritar</Text>
             <TouchableOpacity onPress={handleHeartPress}>
                 <Image style={{width: "32px", height: "32px", position: 'relative'}} source={
                   isFilled
@@ -182,8 +175,9 @@ const DetailScreen = ({navigation,route }) => {
                 } />
 
             </TouchableOpacity>
-
           </View>
+        <View style={styles.charFile}>
+          <Text style={styles.charInfos}>Name: {poke.species.name}</Text>
           <View style={styles.typesContainer}>
             <Text>Types: </Text>
             {poke.types.map((type, index) => (

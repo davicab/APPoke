@@ -83,10 +83,6 @@ const FavoritesScreen = ({ navigation, route }) => {
 
   return (
     <View style={tema.bg}>
-      <View style={{ flexDirection: 'row', gap: 15 }}>
-        <CheckBox value={theme} onValueChange={toggleTheme} />
-        <Text style={{ color: theme ? 'white' : 'black' }}>Modo Noturno</Text>
-      </View>
       <View style={tema.mainView}>
         <Text style={tema.title}>Pokemons Favoritos</Text>
         {isLoading ? (
